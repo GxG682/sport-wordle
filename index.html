@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sports Wordle</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --green: #3B6D11;
+      --green-light: #EAF3DE;
+      --amber: #BA7517;
+      --amber-light: #FAEEDA;
+      --bg: #f5f2eb;
+      --surface: #ffffff;
+      --border: rgba(0,0,0,0.12);
+      --text: #1a1a1a;
+      --text-muted: #888;
+      --radius: 8px;
+    }
+
+    body {
+      background: var(--bg);
+      font-family: 'DM Sans', sans-serif;
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    header {
+      width: 100%;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface);
+      text-align: center;
+      padding: 1rem;
+    }
+
+    header h1 {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 2.4rem;
+      letter-spacing: 2px;
+      color: var(--text);
+    }
+
+    header p {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    main {
+      width: 100%;
+      max-width: 480px;
+      padding: 1.5rem 1rem 2rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .hint-bar {
+      font-size: 13px;
+      color: var(--text-muted);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 5px 16px;
+      min-height: 30px;
+      display: flex;
+      align-items: center;
+    }
+
+    .hint-bar span { font-weight: 500; color: var(--text); margin-left: 4px; }
+
+    .board {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .row { display: flex; gap: 6px; }
+
+    .cell {
+      width: 52px; height: 52px;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px; font-weight: 500;
+      text-transform: uppercase;
+      background: var(--surface);
+      color: var(--text);
+      transition: background 0.15s, border-color 0.15s;
+    }
+
+    .cell.active-row { border-color: #aaa; }
+    .cell.correct { background: var(--green); border-color: var(--green); color: var(--green-light); }
+    .cell.present { background: var(--amber); border-color: var(--amber); color: var(--amber-light); }
+    .cell.absent { background: #d6d3cc; border-color: #d6d3cc; color: #666; }
+
+    .msg {
+      font-size: 14px; font-weight: 500;
+      min-height: 22px; text-align: center;
+      color: var(--text);
+    }
+
+    .keyboard {
+      display: flex; flex-direction: column;
+      gap: 6px; align-items: center;
+      width: 100%;
+    }
+
+    .kb-row { display: flex; gap: 5px; }
+
+    .key {
+      min-width: 36px; height: 44px; padding: 0 8px;
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      background: var(--surface);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 13px; font-weight: 500;
+      cursor: pointer; color: var(--text);
+      display: flex; align-items: center; justify-content: center;
+      transition: background 0.1s, transform 0.08s;
+      user-select: none;
+    }
+
+    .key:active { transform: scale(0.95); }
+    .key.wide { min-width: 56px; font-size: 11px; }
+    .key.correct { background: var(--green); border-color: var(--green); color: var(--green-light); }
+    .key.present { background: var(--amber); border-color: var(--amber); color: var(--amber-light); }
+    .key.absent { background: #d6d3cc; border-color: #d6d3cc; color: #666; }
+
+    .new-btn {
+      margin-top: 0.5rem;
+      padding: 10px 28px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px; font-weight: 500;
+      cursor: pointer;
+      border-radius: 20px;
+      border: 1.5px solid var(--border);
+      background: var(--surface);
+      color: var(--text);
+      transition: background 0.15s;
+    }
+
+    .new-btn:hover { background: #ede9e0; }
+
+    .legend {
+      display: flex; gap: 12px;
+      font-size: 12px; color: var(--text-muted);
+      align-items: center;
+    }
+
+    .legend-item { display: flex; align-items: center; gap: 5px; }
+    .legend-dot {
+      width: 14px; height: 14px; border-radius: 3px;
+    }
+    .legend-dot.correct { background: var(--green); }
+    .legend-dot.present { background: var(--amber); }
+    .legend-dot.absent { background: #d6d3cc; }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>Sports Wordle</h1>
+  <p>Guess the sports star's last name</p>
+</header>
+
+<main>
+  <div class="hint-bar" id="hint-bar">Sport: <span id="sport-name">...</span></div>
+
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot correct"></div> Correct</div>
+    <div class="legend-item"><div class="legend-dot present"></div> Wrong spot</div>
+    <div class="legend-item"><div class="legend-dot absent"></div> Not in name</div>
+  </div>
+
+  <div class="board" id="board"></div>
+  <div class="msg" id="msg"></div>
+  <div class="keyboard" id="keyboard"></div>
+  <button class="new-btn" onclick="newGame()">New athlete</button>
+</main>
+
+<script>
+const athletes = [
+  { name: "MESSI", sport: "Football" },
+  { name: "JAMES", sport: "Basketball" },
+  { name: "WOODS", sport: "Golf" },
+  { name: "FEDERER", sport: "Tennis" },
+  { name: "BOLT", sport: "Athletics" },
+  { name: "NADAL", sport: "Tennis" },
+  { name: "JORDAN", sport: "Basketball" },
+  { name: "RONALDO", sport: "Football" },
+  { name: "HAMILTON", sport: "Formula 1" },
+  { name: "CURRY", sport: "Basketball" },
+  { name: "DJOKOVIC", sport: "Tennis" },
+  { name: "WILLIAMS", sport: "Tennis" },
+  { name: "BRADY", sport: "American Football" },
+  { name: "ALI", sport: "Boxing" },
+  { name: "PHELPS", sport: "Swimming" },
+  { name: "GRETZKY", sport: "Ice Hockey" },
+  { name: "SCHUMACHER", sport: "Formula 1" },
+  { name: "TYSON", sport: "Boxing" },
+  { name: "DURANT", sport: "Basketball" },
+  { name: "BILES", sport: "Gymnastics" },
+  { name: "MBAPPE", sport: "Football" },
+  { name: "HAALAND", sport: "Football" },
+  { name: "ALCARAZ", sport: "Tennis" },
+  { name: "CLARK", sport: "Basketball" },
+];
+
+const MAX_GUESSES = 6;
+let target, targetWord, currentRow, currentGuess, gameOver, keyState, board;
+
+function newGame() {
+  const pick = athletes[Math.floor(Math.random() * athletes.length)];
+  target = pick;
+  targetWord = pick.name;
+  currentRow = 0;
+  currentGuess = [];
+  gameOver = false;
+  keyState = {};
+  document.getElementById('msg').textContent = '';
+  document.getElementById('sport-name').textContent = target.sport;
+  buildBoard();
+  buildKeyboard();
+}
+
+function buildBoard() {
+  const boardEl = document.getElementById('board');
+  boardEl.innerHTML = '';
+  board = [];
+  for (let r = 0; r < MAX_GUESSES; r++) {
+    const rowEl = document.createElement('div');
+    rowEl.className = 'row';
+    const cells = [];
+    for (let c = 0; c < targetWord.length; c++) {
+      const cell = document.createElement('div');
+      cell.className = 'cell';
+      rowEl.appendChild(cell);
+      cells.push(cell);
+    }
+    board.push(cells);
+    boardEl.appendChild(rowEl);
+  }
+}
+
+function buildKeyboard() {
+  const rows = [
+    ['Q','W','E','R','T','Y','U','I','O','P'],
+    ['A','S','D','F','G','H','J','K','L'],
+    ['ENTER','Z','X','C','V','B','N','M','⌫']
+  ];
+  const kb = document.getElementById('keyboard');
+  kb.innerHTML = '';
+  rows.forEach(row => {
+    const rowEl = document.createElement('div');
+    rowEl.className = 'kb-row';
+    row.forEach(k => {
+      const btn = document.createElement('button');
+      btn.className = 'key' + (k.length > 1 ? ' wide' : '');
+      btn.textContent = k;
+      btn.dataset.key = k;
+      btn.onclick = () => handleKey(k);
+      rowEl.appendChild(btn);
+    });
+    kb.appendChild(rowEl);
+  });
+}
+
+function handleKey(k) {
+  if (gameOver) return;
+  if (k === '⌫') {
+    currentGuess.pop();
+  } else if (k === 'ENTER') {
+    submitGuess();
+    return;
+  } else if (currentGuess.length < targetWord.length) {
+    currentGuess.push(k);
+  }
+  renderCurrentRow();
+}
+
+function renderCurrentRow() {
+  const cells = board[currentRow];
+  cells.forEach((cell, i) => {
+    cell.textContent = currentGuess[i] || '';
+    cell.className = 'cell active-row';
+  });
+}
+
+function submitGuess() {
+  if (currentGuess.length < targetWord.length) {
+    document.getElementById('msg').textContent = 'Not enough letters!';
+    setTimeout(() => { if (!gameOver) document.getElementById('msg').textContent = ''; }, 1200);
+    return;
+  }
+  const guess = currentGuess.join('');
+  const result = scoreGuess(guess, targetWord);
+  const cells = board[currentRow];
+
+  result.forEach((r, i) => {
+    cells[i].textContent = guess[i];
+    cells[i].className = 'cell ' + r;
+    const letter = guess[i];
+    if (!keyState[letter] || r === 'correct' || (r === 'present' && keyState[letter] === 'absent')) {
+      keyState[letter] = r;
+    }
+  });
+
+  updateKeyboard();
+
+  if (guess === targetWord) {
+    gameOver = true;
+    const msgs = ['Incredible!', 'Amazing!', 'Great job!', 'Nice one!', 'Phew!', 'You got it!'];
+    document.getElementById('msg').textContent = msgs[currentRow] || 'You got it!';
+    return;
+  }
+
+  currentRow++;
+  currentGuess = [];
+
+  if (currentRow >= MAX_GUESSES) {
+    gameOver = true;
+    document.getElementById('msg').textContent = 'It was ' + targetWord + '. Try again!';
+  }
+}
+
+function scoreGuess(guess, target) {
+  const result = Array(target.length).fill('absent');
+  const targetArr = target.split('');
+  const guessArr = guess.split('');
+  const used = Array(target.length).fill(false);
+  guessArr.forEach((ch, i) => {
+    if (ch === targetArr[i]) { result[i] = 'correct'; used[i] = true; }
+  });
+  guessArr.forEach((ch, i) => {
+    if (result[i] === 'correct') return;
+    for (let j = 0; j < target.length; j++) {
+      if (!used[j] && ch === targetArr[j]) { result[i] = 'present'; used[j] = true; break; }
+    }
+  });
+  return result;
+}
+
+function updateKeyboard() {
+  document.querySelectorAll('.key').forEach(btn => {
+    const k = btn.dataset.key;
+    if (keyState[k]) btn.className = 'key' + (btn.classList.contains('wide') ? ' wide' : '') + ' ' + keyState[k];
+  });
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Backspace') handleKey('⌫');
+  else if (e.key === 'Enter') handleKey('ENTER');
+  else if (/^[a-zA-Z]$/.test(e.key)) handleKey(e.key.toUpperCase());
+});
+
+newGame();
+</script>
+</body>
+</html>
